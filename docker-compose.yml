@@ -1,0 +1,53 @@
+include:
+  - docker-compose.services.yml
+services:
+  backend:
+    build:
+      context: .
+    image: fleek:0.1
+    container_name: fleek-backend
+    ports:
+      - "8000:80"
+    volumes:
+      - ./data:/workspace/data
+    env_file:
+      - ./.env
+    command: [ "python","-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "2" ]
+    environment:
+      # these en vars are needed for some reason to start sqs with localstack
+      # https://github.com/localstack/localstack/issues/528#issuecomment-534492263
+      - AWS_ACCESS_KEY_ID=XXX
+      - AWS_SECRET_ACCESS_KEY=XXX
+      - AWS_DEFAULT_REGION=eu-west-1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.560'
+          memory: '512M'
+        reservations:
+          cpus: '2.560'
+          memory: '512M'
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [ "python","-m", "celery","-A","app.tasks.celery","worker","-l","INFO","--concurrency","2"]
+    volumes:
+      - .:/code
+    environment:
+      PYTHONUNBUFFERED: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    env_file:
+      - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
