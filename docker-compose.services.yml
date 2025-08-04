@@ -11,6 +11,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
     env_file:
+      - .env.example
       - .env
     ports:
       - '5469:5432'
