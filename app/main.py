@@ -1,3 +1,5 @@
+import time
+
 import sentry_sdk
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
@@ -28,6 +30,14 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router)
+
+@app.middleware("http")
+async def add_process_time_header(request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = f"{process_time * 1000:.2f} ms"
+    return response
 
 @app.get("/", tags=["root"], include_in_schema=False)
 async def root_redirect():
