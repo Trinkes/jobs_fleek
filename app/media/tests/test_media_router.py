@@ -1,7 +1,6 @@
 from starlette.testclient import TestClient
 
 from app.media.api.schemas import MediaOut
-from app.media.media import Status
 from app.media.media_status import MediaStatus
 
 
@@ -26,7 +25,6 @@ def test_get_media_status(test_client: TestClient):
 
     response = test_client.get(f"/media/status/{media.status.job_id}")
     assert response.status_code == 200, response.text
-    status = Status.model_validate_json(response.text)
 
-    assert status.status == MediaStatus.IN_QUEUE
-    assert status.job_id == media.status.job_id
+    media_response = MediaOut.model_validate_json(response.text)
+    assert media_response == MediaOut.model_validate(media.model_dump())
