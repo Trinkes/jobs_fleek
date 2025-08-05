@@ -9,17 +9,15 @@ from starlette.responses import RedirectResponse
 from app import api_router
 from app.core.config import settings
 
-
-
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
 
-app = FastAPI(
+fastapi_app = FastAPI(
     title=settings.PROJECT_NAME,
 )
 
 if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
+    fastapi_app.add_middleware(
         CORSMiddleware,
         allow_origins=[
             str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS
@@ -29,9 +27,10 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-app.include_router(api_router)
+fastapi_app.include_router(api_router)
 
-@app.middleware("http")
+
+@fastapi_app.middleware("http")
 async def add_process_time_header(request, call_next):
     start_time = time.perf_counter()
     response = await call_next(request)
@@ -39,6 +38,7 @@ async def add_process_time_header(request, call_next):
     response.headers["X-Process-Time"] = f"{process_time * 1000:.2f} ms"
     return response
 
-@app.get("/", tags=["root"], include_in_schema=False)
+
+@fastapi_app.get("/", tags=["root"], include_in_schema=False)
 async def root_redirect():
     return RedirectResponse(url="/docs")

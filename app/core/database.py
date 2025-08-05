@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Annotated
 
 from fastapi import Depends
@@ -70,10 +69,6 @@ class DatabaseConfig(BaseModel):
 def get_database_config():
     engine = create_engine(
         str(settings.SQLALCHEMY_DATABASE_URI),
-        pool_size=10,  # Set the number of connections in the pool
-        max_overflow=20,  # Set the maximum overflow size
-        pool_timeout=30,  # Set the timeout for getting a connection from the pool
-        pool_recycle=1800,  # Set the recycle time for connections
         # echo=True,  # Set the logging level
         connect_args={"application_name": "fleek-backend-sync"},
     )
@@ -83,16 +78,9 @@ def get_database_config():
         bind=engine,
     )
     async_engine = create_async_engine(
-        str(settings.ASYNC_SQLALCHEMY_DATABASE_URI),
-        pool_size=11,  # Set the number of connections in the pool
-        max_overflow=20,  # Set the maximum overflow size
-        pool_timeout=30,  # Set the timeout for getting a connection from the pool
-        pool_recycle=1800,  # Set the recycle time for connections
+        # we have to pass
+        f"{settings.ASYNC_SQLALCHEMY_DATABASE_URI}",
         # echo=True,  # Set the logging level
-        connect_args={
-            "application_name": "fleek-backend-async",
-            # "options": "-c idle_in_transaction_session_timeout=30000",
-        },
     )
 
     async_session_local = async_sessionmaker(
@@ -119,7 +107,7 @@ def get_async_db():
 def get_db():
     with database_config.session_local() as db:
         yield db
-    
+
 
 SessionDep = Annotated[Session, Depends(get_db)]
 AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]
