@@ -30,7 +30,9 @@ class Settings(BaseSettings):
         os.path.dirname(os.path.abspath(__file__))
     ).parent.parent
     model_config = SettingsConfigDict(
-        env_file=(PROJECT_ROOT_DIR/".env", PROJECT_ROOT_DIR/".env.local"), env_ignore_empty=True, extra="ignore"
+        env_file=(PROJECT_ROOT_DIR / ".env", PROJECT_ROOT_DIR / ".env.local"),
+        env_ignore_empty=True,
+        extra="ignore",
     )
 
     BACKEND_CORS_ORIGINS: Annotated[
@@ -70,6 +72,12 @@ class Settings(BaseSettings):
         )
 
     REDIS_URL: RedisDsn
+    BUCKET_NAME: str = "fleek-labs"
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    AWS_DEFAULT_REGION: str
+    AWS_ENDPOINT_URL: str
+    S3_ENDPOINT_URL: str
 
 
 settings = Settings()  # type: ignore

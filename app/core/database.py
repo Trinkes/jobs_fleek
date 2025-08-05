@@ -6,10 +6,8 @@ from sqlalchemy import (
     TIMESTAMP,
     Column,
     Table,
-    create_engine,
     func,
     inspect,
-    Engine,
 )
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -17,7 +15,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncEngine,
 )
-from sqlalchemy.orm import as_declarative, sessionmaker, Session
+from sqlalchemy.orm import as_declarative
 
 from app.core.config import settings
 
@@ -54,33 +52,19 @@ class Base(Basic):
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
 
 
-SessionLocal = Session
 AsyncSessionLocal = async_sessionmaker[AsyncSession]
 
 
 class DatabaseConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    engine: Engine | None = None
     async_engine: AsyncEngine | None = None
-    session_local: sessionmaker[Session] | None = None
     async_session_local: async_sessionmaker[AsyncSession] | None = None
 
 
 def get_database_config():
-    engine = create_engine(
-        str(settings.SQLALCHEMY_DATABASE_URI),
-        # echo=True,  # Set the logging level
-        connect_args={"application_name": "fleek-backend-sync"},
-    )
-    SessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=engine,
-    )
     async_engine = create_async_engine(
-        # we have to pass
         f"{settings.ASYNC_SQLALCHEMY_DATABASE_URI}",
-        # echo=True,  # Set the logging level
+        # echo=True,
     )
 
     async_session_local = async_sessionmaker(
@@ -90,9 +74,7 @@ def get_database_config():
         autocommit=False,
     )
     return DatabaseConfig(
-        engine=engine,
         async_engine=async_engine,
-        session_local=SessionLocal,
         async_session_local=async_session_local,
     )
 
@@ -104,10 +86,4 @@ def get_async_db():
     return database_config.async_session_local
 
 
-def get_db():
-    with database_config.session_local() as db:
-        yield db
-
-
-SessionDep = Annotated[Session, Depends(get_db)]
 AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]

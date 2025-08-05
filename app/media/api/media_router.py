@@ -13,7 +13,7 @@ async def generate(
     params: MediaGenerationParams,
     media_repository: MediaRepositoryDep,
 ):
-    media = media_repository.kwargs_create(prompt=params.prompt)
+    media = await media_repository.create_media(prompt=params.prompt)
     task = create_media.apply_async(kwargs={"media_id": media.id})
     return await media_repository.update_media_job_id(media.id, task.id)
 
