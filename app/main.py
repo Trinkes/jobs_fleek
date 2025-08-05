@@ -1,4 +1,5 @@
 import time
+from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
@@ -8,12 +9,24 @@ from starlette.responses import RedirectResponse
 
 from app import api_router
 from app.core.config import settings
+from app.core.database import database_config
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    yield
+    # Shutdown
+    if database_config.async_engine:
+        await database_config.async_engine.dispose()
+
+
 fastapi_app = FastAPI(
     title=settings.PROJECT_NAME,
+    lifespan=lifespan,
 )
 
 if settings.BACKEND_CORS_ORIGINS:
