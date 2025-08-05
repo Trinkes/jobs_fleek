@@ -10,10 +10,10 @@ def test_create_media(test_client: TestClient):
     response = test_client.post("/media/generate", json=body)
     assert response.status_code == 200, response.text
     media = MediaOut.model_validate_json(response.text)
-    assert media.status.job_id is not None
+    assert media.job_id is not None
     assert media.id is not None
     assert media.prompt == prompt
-    assert media.status.status == MediaStatus.IN_QUEUE
+    assert media.status == MediaStatus.IN_QUEUE
 
 
 def test_get_media_status(test_client: TestClient):
@@ -23,7 +23,7 @@ def test_get_media_status(test_client: TestClient):
     assert response.status_code == 200, response.text
     media = MediaOut.model_validate_json(response.text)
 
-    response = test_client.get(f"/media/status/{media.status.job_id}")
+    response = test_client.get(f"/media/status/{media.job_id}")
     assert response.status_code == 200, response.text
 
     media_response = MediaOut.model_validate_json(response.text)

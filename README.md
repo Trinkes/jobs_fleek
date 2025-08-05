@@ -2,6 +2,21 @@
 
 A FastAPI application with Celery background tasks, using PostgreSQL, Redis, and LocalStack for AWS services simulation.
 
+## Challenge considerations
+
+### /media/status/{job_id} endpoint
+
+The current design has `/media/status/{job_id}` return the complete media resource. While this works functionally, it might be unexpected since:
+
+- I would expect "status" endpoints to return lightweight status information
+- The endpoint name suggests it's about status, but it returns full resource data
+
+**Alternatives to consider:**
+- **Option 1:** Use `/media/{resource_id}` for complete resources, `/media/status/{job_id}` for status only
+- **Option 2:** Rename to `/media/jobs/{job_id}` to better reflect that it returns complete job results
+
+The current approach works but could be more predictable for API consumers.
+
 ## Tech Stack
 
 - **FastAPI**: Modern, fast web framework for building APIs
@@ -15,9 +30,11 @@ A FastAPI application with Celery background tasks, using PostgreSQL, Redis, and
 ## Prerequisites
 
 1. **Docker and Docker Compose** installed on your system
-2. **Environment Configuration** (Optional): The project will work out of the box using default values from `.env.example`. You can set up both environments simultaneously:
-   - **Dockerized mode**: Uses `.env` (with `.env.example` as fallback)
-   - **Native mode**: Uses `.env` + `.env.local` (Pydantic loads both, with `.env.local` configured for localhost connections to dockerized services)
+2. **Environment Configuration** (Optional): The project will work out of the box using default values from
+   `.env.example`. You can set up both environments simultaneously:
+    - **Dockerized mode**: Uses `.env` (with `.env.example` as fallback)
+    - **Native mode**: Uses `.env` + `.env.local` (Pydantic loads both, with `.env.local` configured for localhost
+      connections to dockerized services)
 
 ## Running the Project
 
@@ -34,6 +51,7 @@ docker compose down
 ```
 
 **Services and Ports:**
+
 - FastAPI Backend: http://localhost:8000
 - PostgreSQL: localhost:5469
 - Redis: localhost:6834
@@ -41,15 +59,18 @@ docker compose down
 
 ### Method 2: Hybrid Setup (Development)
 
-This method runs only the dependencies (PostgreSQL, Redis, LocalStack) in Docker while running FastAPI and Celery manually. Useful for development and debugging.
+This method runs only the dependencies (PostgreSQL, Redis, LocalStack) in Docker while running FastAPI and Celery
+manually. Useful for development and debugging.
 
 #### Step 1: Start Dependencies
+
 ```bash
 # Start only the database and supporting services
 docker compose -f docker-compose.services.yml up
 ```
 
 #### Step 2: Install Python Dependencies
+
 Make sure you have Python 3.11+ and uv installed:
 
 ```bash
@@ -61,6 +82,7 @@ uv sync
 ```
 
 #### Step 3: Run Database Migrations
+
 ```bash
 # Run Alembic migrations to set up the database schema
 uv run alembic upgrade head
@@ -69,23 +91,25 @@ uv run alembic upgrade head
 #### Step 4: Start FastAPI and Celery Manually
 
 **Terminal 1 - FastAPI Application:**
+
 ```bash
 # Start the FastAPI development server
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **Terminal 2 - Celery Worker:**
+
 ```bash
 # Start the Celery worker
 uv run celery -A app.tasks.celery worker -l INFO --concurrency 2
 ```
 
 **Services and Ports:**
+
 - FastAPI Backend: http://localhost:8000
 - PostgreSQL: localhost:5469
 - Redis: localhost:6834
 - LocalStack: localhost:4566
-
 
 ## Stopping Services
 

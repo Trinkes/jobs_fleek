@@ -1,15 +1,14 @@
-from app.core.model import Model, BasicModel
+from pydantic import AnyUrl
+
+from app.core.model import Model
 from app.media.job_id import JobId
 from app.media.media_id import MediaId
 from app.media.media_status import MediaStatus
 
 
-class Status(BasicModel):
-    job_id: JobId | None = None
-    status: MediaStatus
-
-
 class Media(Model):
     id: MediaId
-    status: Status
+    job_id: JobId | None = None
     prompt: str
+    status: MediaStatus
+    media_uri: AnyUrl | None = None
