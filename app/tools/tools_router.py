@@ -29,7 +29,7 @@ async def health_check(db_session: AsyncSessionDep):
         return {"status": "OK"}
 
 
-@tools_router.get("/tools/celery_status")
+@tools_router.get("/celery_status")
 def celery_status(message: str | None = None):
     result = celery_health_check.apply_async(kwargs={"message": message})
     try:

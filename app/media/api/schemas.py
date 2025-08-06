@@ -1,4 +1,4 @@
-from pydantic.json_schema import SkipJsonSchema
+from pydantic import Field
 
 from app.core.model import BasicModel
 from app.media.media import Media
@@ -9,4 +9,4 @@ class MediaGenerationParams(BasicModel):
 
 
 class MediaOut(Media):
-    media_uri: SkipJsonSchema[str] | None = None
+    media_uri: str | None = Field(None, exclude=True)

@@ -1,7 +1,6 @@
 from typing import Any, Annotated
 
 from fastapi import Depends
-from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
     TIMESTAMP,
     Column,
@@ -13,7 +12,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
     async_sessionmaker,
-    AsyncEngine,
 )
 from sqlalchemy.orm import as_declarative
 
@@ -52,38 +50,36 @@ class Base(Basic):
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
 
 
-AsyncSessionLocal = async_sessionmaker[AsyncSession]
+async_engine = None
+AsyncSessionLocal = None
 
 
-class DatabaseConfig(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    async_engine: AsyncEngine | None = None
-    async_session_local: async_sessionmaker[AsyncSession] | None = None
-
-
-def get_database_config():
-    async_engine = create_async_engine(
-        f"{settings.ASYNC_SQLALCHEMY_DATABASE_URI}",
-        # echo=True,
-    )
-
-    async_session_local = async_sessionmaker(
+def setup_database():
+    global async_engine, AsyncSessionLocal
+    async_engine = create_async_engine(f"{settings.ASYNC_SQLALCHEMY_DATABASE_URI}")
+    AsyncSessionLocal = async_sessionmaker(
         async_engine,
         expire_on_commit=False,
         autoflush=False,
         autocommit=False,
     )
-    return DatabaseConfig(
-        async_engine=async_engine,
-        async_session_local=async_session_local,
-    )
+    return AsyncSessionLocal
 
 
-database_config = get_database_config()
+def get_engine():
+    if async_engine is None:
+        raise ValueError(
+            "you must call setup_database function before using database sessions"
+        )
+    return async_engine
 
 
-def get_async_db():
-    return database_config.async_session_local
+def get_db():
+    if AsyncSessionLocal is None:
+        raise ValueError(
+            "you must call setup_database function before using database sessions"
+        )
+    return AsyncSessionLocal
 
 
-AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]
+AsyncSessionDep = Annotated[AsyncSession, Depends(get_db)]

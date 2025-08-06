@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import UUID, String, Enum, UniqueConstraint
+from sqlalchemy import UUID, String, Enum, UniqueConstraint, func, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -28,5 +29,9 @@ class Medias(Base):
         nullable=False,
         default=MediaStatus.IN_QUEUE,
     )
+    next_try: Mapped[datetime] = mapped_column(
+        nullable=False, server_default=func.now()
+    )
+    number_of_tries: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     media_uri: Mapped[str] = mapped_column(String, nullable=True)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Depends
@@ -30,13 +31,19 @@ class MediaRepository(BaseRepository[Medias, Media]):
             media = (await session.execute(statement)).fetchone()
             return self._map_model(media)
 
-    async def update_media_uri(
+    async def finish_media_generation(
         self, media_id: MediaId, image_uri: str, status: MediaStatus
     ) -> Media:
         statement = (
             update(Medias)
             .where(Medias.id == media_id)
-            .values(**{Medias.media_uri.key: image_uri, Medias.status.key: status})
+            .values(
+                **{
+                    Medias.media_uri.key: image_uri,
+                    Medias.status.key: status,
+                    Medias.number_of_tries.key: Medias.number_of_tries + 1,
+                }
+            )
             .returning(Medias)
         )
         async with self._async_session() as session:
@@ -61,6 +68,25 @@ class MediaRepository(BaseRepository[Medias, Media]):
             update(Medias)
             .where(Medias.id == media_id, Medias.status == required_status)
             .values(**{Medias.status.key: status_to_update})
+            .returning(Medias)
+        )
+        async with self._async_session() as session:
+            media = (await session.execute(statement)).fetchone()
+            await session.commit()
+            return self._map_model(media)
+
+    async def register_media_generation_error(
+        self, media_id: MediaId, next_try: datetime
+    ):
+        values = {
+            Medias.status.key: MediaStatus.IN_QUEUE,
+            Medias.next_try.key: next_try,
+            Medias.number_of_tries.key: Medias.number_of_tries + 1,
+        }
+        statement = (
+            update(Medias)
+            .where(Medias.id == media_id)
+            .values(**values)
             .returning(Medias)
         )
         async with self._async_session() as session:

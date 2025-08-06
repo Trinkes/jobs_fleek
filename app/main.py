@@ -9,7 +9,7 @@ from starlette.responses import RedirectResponse
 
 from app import api_router
 from app.core.config import settings
-from app.core.database import database_config
+from app.core.database import setup_database, get_engine
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
@@ -17,11 +17,9 @@ if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    setup_database()
     yield
-    # Shutdown
-    if database_config.async_engine:
-        await database_config.async_engine.dispose()
+    await get_engine().dispose()
 
 
 fastapi_app = FastAPI(

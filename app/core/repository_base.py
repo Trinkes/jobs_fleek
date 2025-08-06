@@ -1,15 +1,11 @@
 from typing import (
-    Any,
     Generic,
     TypeVar,
     get_args,
 )
-from uuid import UUID
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import (
     Table,
-    select,
     Row,
 )
 
@@ -42,51 +38,6 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
             )
         self.table: Table = self.database_model.__table__
 
-    async def get_kwargs_async(self, **kwargs) -> PydanticModelType:
-        obj = await self.get_kwargs_maybe_async(**kwargs)
-        if obj is None:
-            raise ResourceNotFoundException(
-                "Resource not found",
-                extras={
-                    "model": str(self.database_model),
-                    "kwargs": jsonable_encoder(kwargs),
-                },
-            )
-        return obj
-
-    async def get_all_kwargs_async(self, **kwargs) -> list[PydanticModelType]:
-        try:
-            async with self._async_session() as session:
-                results = (
-                    await session.execute(
-                        select(self.database_model).filter_by(**kwargs)
-                    )
-                ).all()
-        except Exception as e:
-            await session.rollback()
-            raise e
-        return [self._map_model(result[0]) for result in results]
-
-    async def get_kwargs_maybe_async(self, **kwargs) -> PydanticModelType | None:
-        try:
-            async with self._async_session() as session:
-                result = (
-                    await session.execute(
-                        select(self.database_model).filter_by(**kwargs)
-                    )
-                ).one_or_none()
-                query_result = result[0] if result else None
-        except Exception as e:
-            await session.rollback()
-            raise e
-
-        return self._map_optional_model(query_result)
-
-    async def get_or_raise(self, obj_id: Any) -> PydanticModelType:
-        async with self._async_session() as session:
-            query_result = await session.get(self.database_model, obj_id)
-        return self._map_optional_model(query_result)
-
     def _map_model(self, model: DatabaseModelType | None) -> PydanticModelType:
         optional_model = self._map_optional_model(model)
         if optional_model is None:
@@ -105,13 +56,6 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
             return None
         return self.model.model_validate(model)
 
-    def is_uuid(self, text: str) -> bool:
-        try:
-            UUID(text)
-            return True
-        except ValueError:
-            return False
-
     def map_models(
         self, models: list[DatabaseModelType | Row]
     ) -> list[PydanticModelType]:
@@ -122,12 +66,3 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
             to_return.append(self._map_model(model))
 
         return to_return
-
-    async def execute_async(self, sql_text):
-        try:
-            async with self._async_session() as session:
-                result = await session.execute(sql_text)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        return result.scalars().all()
