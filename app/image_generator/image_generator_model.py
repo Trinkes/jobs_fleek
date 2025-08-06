@@ -3,11 +3,11 @@ from abc import ABC
 from typing import AsyncIterator
 
 
-class GenerateImageServiceError(BaseException):
+class GenerateImageServiceError(Exception):
     pass
 
 
-class GenericImageGeneratorError(BaseException):
+class GenericImageGeneratorError(Exception):
     pass
 
 

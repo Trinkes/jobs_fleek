@@ -1,10 +1,15 @@
+import uuid
+from datetime import datetime
+
 import aioboto3
 import pytest
 from app.image_generator.dummy_image_generator.dummy_image_generator_model import (
     DummyImageGeneratorModel,
 )
-from app.image_generator.image_generator import ImageGenerator
+from app.image_generator.image_generator import ImageGenerator, TaskScheduler
 from app.image_generator.storage import Storage
+from app.media.job_id import JobId
+from app.media.media_id import MediaId
 from app.media.media_repository import MediaRepository
 from tests.conftest import *  # noqa
 from app.media.tests.conftest import *  # noqa
@@ -12,7 +17,18 @@ from app.core.config import settings
 
 
 @pytest.fixture(scope="session")
-def image_generator(media_repository: MediaRepository) -> ImageGenerator:
+def task_scheduler() -> TaskScheduler:
+    class DummyTaskScheduler(TaskScheduler):
+        def schedule_media_generation(self, media_id: MediaId, eta: datetime) -> JobId:
+            return uuid.uuid4()
+
+    return DummyTaskScheduler()
+
+
+@pytest.fixture(scope="session")
+def image_generator(
+    media_repository: MediaRepository, task_scheduler
+) -> ImageGenerator:
     image_generator_model = DummyImageGeneratorModel()
     session = aioboto3.Session(
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -26,6 +42,9 @@ def image_generator(media_repository: MediaRepository) -> ImageGenerator:
         s3_url=settings.S3_ENDPOINT_URL,
     )
     image_generator = ImageGenerator(
-        image_generator_model, media_repository, storage=storage
+        image_generator_model,
+        media_repository,
+        storage=storage,
+        task_scheduler=task_scheduler,
     )
     return image_generator

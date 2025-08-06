@@ -1,5 +1,6 @@
 import contextlib
 import logging
+from datetime import datetime
 from typing import AsyncGenerator
 
 import aioboto3
@@ -12,8 +13,9 @@ from app.core.config import settings
 from app.image_generator.dummy_image_generator.dummy_image_generator_model import (
     DummyImageGeneratorModel,
 )
-from app.image_generator.image_generator import ImageGenerator
+from app.image_generator.image_generator import ImageGenerator, TaskScheduler
 from app.image_generator.storage import Storage
+from app.media.job_id import JobId
 from app.media.media_id import MediaId
 from app.media.media_repository import MediaRepository
 from app.tasks.celery import celery_app
@@ -55,7 +57,7 @@ async def get_db_session_maker() -> AsyncGenerator:
 
 
 async def _generate_media(media_id: MediaId):
-    image_generator_model = DummyImageGeneratorModel(0, False)
+    image_generator_model = DummyImageGeneratorModel(1, True)
     async with get_db_session_maker() as db_session:
         media_repository = MediaRepository(db_session)
         session = aioboto3.Session(
@@ -69,8 +71,20 @@ async def _generate_media(media_id: MediaId):
             bucket_name=settings.BUCKET_NAME,
             s3_url=settings.S3_ENDPOINT_URL,
         )
+
+        class CeleryTaskScheduler(TaskScheduler):
+            def schedule_media_generation(
+                self, media_id: MediaId, eta: datetime
+            ) -> JobId:
+                return create_media.apply_async(
+                    kwargs={"media_id": str(media_id)}, eta=eta
+                ).id
+
         image_generator = ImageGenerator(
-            image_generator_model, media_repository, storage=storage
+            image_generator_model,
+            media_repository,
+            storage=storage,
+            task_scheduler=CeleryTaskScheduler(),
         )
         media = await image_generator.generate_image(media_id)
         if media is None:

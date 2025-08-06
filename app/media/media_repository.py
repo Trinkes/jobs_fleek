@@ -18,7 +18,7 @@ class MediaRepository(BaseRepository[Medias, Media]):
             statement = (
                 update(Medias)
                 .where(Medias.id == media_id)
-                .values(job_id=job_id)
+                .values(**{Medias.job_id.key: job_id, Medias.celery_jobs.key: [job_id]})
                 .returning(Medias)
             )
             media = (await session.execute(statement)).fetchone()
@@ -76,12 +76,17 @@ class MediaRepository(BaseRepository[Medias, Media]):
             return self._map_model(media)
 
     async def register_media_generation_error(
-        self, media_id: MediaId, next_try: datetime
+        self,
+        media_id: MediaId,
+        next_run: datetime | None,
+        new_job_id: JobId | None,
+        status: MediaStatus,
     ):
         values = {
-            Medias.status.key: MediaStatus.IN_QUEUE,
-            Medias.next_try.key: next_try,
+            Medias.status.key: status,
+            Medias.next_run.key: next_run,
             Medias.number_of_tries.key: Medias.number_of_tries + 1,
+            Medias.celery_jobs.key: Medias.celery_jobs + [new_job_id],
         }
         statement = (
             update(Medias)

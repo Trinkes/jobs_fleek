@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.core.model import Model
 from app.media.job_id import JobId
 from app.media.media_id import MediaId
@@ -10,3 +12,5 @@ class Media(Model):
     prompt: str
     status: MediaStatus
     media_uri: str | None = None
+    next_run: datetime | None = None
+    number_of_tries: int
