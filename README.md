@@ -142,3 +142,6 @@ docker compose -f docker-compose.services.yml down
 # To also remove volumes (WARNING: This will delete your database data)
 docker compose down -v
 ```
+
+## AI conversations
+Check `./ai_conversations` folder to get the full conversations with AI
