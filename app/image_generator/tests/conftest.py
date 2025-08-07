@@ -5,6 +5,7 @@ import aioboto3
 import pytest
 from app.image_generator.dummy_image_generator.dummy_image_generator_model import (
     DummyImageGeneratorModel,
+    ErrorSimulator,
 )
 from app.image_generator.image_generator import ImageGenerator, TaskScheduler
 from app.image_generator.storage import Storage
@@ -28,23 +29,33 @@ def task_scheduler() -> TaskScheduler:
 
 
 @pytest.fixture(scope="session")
-def image_generator(
-    media_repository: MediaRepository,
-    task_scheduler,
-    logs_repository: LogsRepository,
-) -> ImageGenerator:
-    image_generator_model = DummyImageGeneratorModel()
+def storage():
     session = aioboto3.Session(
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         region_name=settings.AWS_DEFAULT_REGION,
     )
 
-    storage = Storage(
+    return Storage(
         aio_session=session,
         bucket_name=settings.BUCKET_NAME,
         s3_url=settings.S3_ENDPOINT_URL,
     )
+
+
+@pytest.fixture(scope="session")
+def image_generator(
+    media_repository: MediaRepository,
+    task_scheduler,
+    logs_repository: LogsRepository,
+    storage: Storage,
+) -> ImageGenerator:
+    class NoErrorErrorSimulator(ErrorSimulator):
+        def maybe_raise_error(self):
+            pass
+
+    image_generator_model = DummyImageGeneratorModel(NoErrorErrorSimulator())
+
     image_generator = ImageGenerator(
         image_generator_model,
         media_repository,

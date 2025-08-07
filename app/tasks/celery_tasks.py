@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import random
 from datetime import datetime
 from typing import AsyncGenerator
 
@@ -12,8 +13,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.core.config import settings
 from app.image_generator.dummy_image_generator.dummy_image_generator_model import (
     DummyImageGeneratorModel,
+    ErrorSimulator,
 )
 from app.image_generator.image_generator import ImageGenerator, TaskScheduler
+from app.image_generator.image_generator_model import (
+    GenerateImageServiceError,
+    GenericImageGeneratorError,
+)
 from app.image_generator.storage import Storage
 from app.logs.log_crud import LogsRepository
 from app.media.job_id import JobId
@@ -58,7 +64,15 @@ async def get_db_session_maker() -> AsyncGenerator:
 
 
 async def _generate_media(media_id: MediaId):
-    image_generator_model = DummyImageGeneratorModel(1, True)
+    class ServiceErrorSimulator(ErrorSimulator):
+        def maybe_raise_error(self):
+            if random.randint(1, 100) > 70:
+                if random.randint(1, 100) > 80:
+                    raise GenerateImageServiceError("test service error")
+                else:
+                    raise GenericImageGeneratorError("test generic error")
+
+    image_generator_model = DummyImageGeneratorModel(ServiceErrorSimulator(), 1)
     async with get_db_session_maker() as db_session:
         media_repository = MediaRepository(db_session)
         session = aioboto3.Session(
@@ -100,5 +114,5 @@ async def _generate_media(media_id: MediaId):
 def create_media(self, media_id: MediaId):
     try:
         return async_to_sync(_generate_media)(media_id)
-    except BaseException as error:
+    except Exception as error:
         logging.error(f"task: {self.request.id} error", exc_info=error)

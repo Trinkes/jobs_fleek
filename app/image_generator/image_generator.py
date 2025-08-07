@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class TaskScheduler(ABC):
     @abstractmethod
     def schedule_media_generation(self, media_id: MediaId, eta: datetime) -> JobId:
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class ImageGenerator:
@@ -62,34 +62,39 @@ class ImageGenerator:
             return media
         except ResourceNotFoundException as error:
             logger.warning(f"no media found with {media_id} id.", exc_info=error)
+            await self.log_error(error)
         except Exception as error:
             logger.warning("image generation failed", exc_info=error)
             # we can, if needed, differentiate the exceptions based on ImageGeneratorModel#generate_image documentation
             # ex: if it's a GenerateImageServiceError and the service provide a time to wait, we could use it as next
             # try datetime
+
             await self.log_error(error, media)
             if media is not None:
                 return await self.handle_failure(media)
             raise error
 
-    async def log_error(self, error, media):
+    async def log_error(self, error: Exception, media: Media | None = None):
         obj_type = type(error)
         exception_type = f"{obj_type.__module__}.{obj_type.__qualname__}"
         extras = {
-            "media_id": media.id,
             "exception_type": exception_type,
             "stack_trace": "".join(
                 traceback.format_exception(type(error), error, error.__traceback__)
             ),
         }
+        if media is not None:
+            extras["media_id"] = str(media.id)
+            extras = media.model_dump() | extras
+
         await self.logs_repository.log(
             "ImageGenerator",
             LogLevel.ERROR,
             "Image generation failed",
-            media.model_dump() | extras,
+            extras,
         )
 
-    async def handle_failure(self, media: Media):
+    async def handle_failure(self, media: Media) -> Media:
         if media.number_of_tries < self.max_retries:
             next_try = await self.calculate_next_try(media)
             job_id = self.task_scheduler.schedule_media_generation(media.id, next_try)

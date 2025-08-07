@@ -55,14 +55,3 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
         if model is None:
             return None
         return self.model.model_validate(model)
-
-    def map_models(
-        self, models: list[DatabaseModelType | Row]
-    ) -> list[PydanticModelType]:
-        to_return = []
-        for model in models:
-            if isinstance(model, Row):
-                model = model[0]
-            to_return.append(self._map_model(model))
-
-        return to_return
