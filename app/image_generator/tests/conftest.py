@@ -8,11 +8,13 @@ from app.image_generator.dummy_image_generator.dummy_image_generator_model impor
 )
 from app.image_generator.image_generator import ImageGenerator, TaskScheduler
 from app.image_generator.storage import Storage
+from app.logs.log_crud import LogsRepository
 from app.media.job_id import JobId
 from app.media.media_id import MediaId
 from app.media.media_repository import MediaRepository
 from tests.conftest import *  # noqa
 from app.media.tests.conftest import *  # noqa
+from app.logs.tests.conftest import *  # noqa
 from app.core.config import settings
 
 
@@ -27,7 +29,9 @@ def task_scheduler() -> TaskScheduler:
 
 @pytest.fixture(scope="session")
 def image_generator(
-    media_repository: MediaRepository, task_scheduler
+    media_repository: MediaRepository,
+    task_scheduler,
+    logs_repository: LogsRepository,
 ) -> ImageGenerator:
     image_generator_model = DummyImageGeneratorModel()
     session = aioboto3.Session(
@@ -46,5 +50,6 @@ def image_generator(
         media_repository,
         storage=storage,
         task_scheduler=task_scheduler,
+        logs_repository=logs_repository,
     )
     return image_generator

@@ -15,6 +15,7 @@ from app.image_generator.dummy_image_generator.dummy_image_generator_model impor
 )
 from app.image_generator.image_generator import ImageGenerator, TaskScheduler
 from app.image_generator.storage import Storage
+from app.logs.log_crud import LogsRepository
 from app.media.job_id import JobId
 from app.media.media_id import MediaId
 from app.media.media_repository import MediaRepository
@@ -80,11 +81,13 @@ async def _generate_media(media_id: MediaId):
                     kwargs={"media_id": str(media_id)}, eta=eta
                 ).id
 
+        log_repository = LogsRepository(db_session)
         image_generator = ImageGenerator(
             image_generator_model,
             media_repository,
             storage=storage,
             task_scheduler=CeleryTaskScheduler(),
+            logs_repository=log_repository,
         )
         media = await image_generator.generate_image(media_id)
         if media is None:

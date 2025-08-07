@@ -7,6 +7,8 @@ from app.media.media_status import MediaStatus
 
 
 class Media(Model):
+    created_at: datetime
+    updated_at: datetime
     id: MediaId
     job_id: JobId | None = None
     prompt: str

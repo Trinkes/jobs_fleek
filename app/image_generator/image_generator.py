@@ -1,4 +1,5 @@
 import logging
+import traceback
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 
@@ -9,6 +10,8 @@ from app.image_generator.image_generator_model import (
     ImageGeneratorModel,
 )
 from app.image_generator.storage import Storage
+from app.logs.log_crud import LogRepositoryDep
+from app.logs.log_level import LogLevel
 from app.media.job_id import JobId
 from app.media.media import Media
 from app.media.media_id import MediaId
@@ -29,11 +32,13 @@ class ImageGenerator:
         self,
         image_generator_model: ImageGeneratorModel,
         media_repository: MediaRepositoryDep,
+        logs_repository: LogRepositoryDep,
         storage: Storage,
         task_scheduler: TaskScheduler,
         retry_delay_seconds_start: int = 1,
         max_retries: int = 5,
     ):
+        self.logs_repository = logs_repository
         self.max_retries = max_retries
         self.retry_delay_seconds_start = retry_delay_seconds_start
         self.task_scheduler = task_scheduler
@@ -50,9 +55,11 @@ class ImageGenerator:
             image_bytes_iter = self.image_generator_model.generate_image(media.prompt)
             image_uri = await self.storage.save_image(image_bytes_iter)
 
-            return await self.media_repository.finish_media_generation(
+            media = await self.media_repository.finish_media_generation(
                 media.id, image_uri, MediaStatus.COMPLETED
             )
+            await self.log_run(media)
+            return media
         except ResourceNotFoundException as error:
             logger.warning(f"no media found with {media_id} id.", exc_info=error)
         except Exception as error:
@@ -60,11 +67,27 @@ class ImageGenerator:
             # we can, if needed, differentiate the exceptions based on ImageGeneratorModel#generate_image documentation
             # ex: if it's a GenerateImageServiceError and the service provide a time to wait, we could use it as next
             # try datetime
-
-            # todo log error properly
+            await self.log_error(error, media)
             if media is not None:
                 return await self.handle_failure(media)
             raise error
+
+    async def log_error(self, error, media):
+        obj_type = type(error)
+        exception_type = f"{obj_type.__module__}.{obj_type.__qualname__}"
+        extras = {
+            "media_id": media.id,
+            "exception_type": exception_type,
+            "stack_trace": "".join(
+                traceback.format_exception(type(error), error, error.__traceback__)
+            ),
+        }
+        await self.logs_repository.log(
+            "ImageGenerator",
+            LogLevel.ERROR,
+            "Image generation failed",
+            media.model_dump() | extras,
+        )
 
     async def handle_failure(self, media: Media):
         if media.number_of_tries < self.max_retries:
@@ -80,5 +103,12 @@ class ImageGenerator:
 
     async def calculate_next_try(self, media: Media) -> datetime:
         next_delay = self.retry_delay_seconds_start * (2**media.number_of_tries)
-        print(f"next_delay: {next_delay}")
         return datetime.now(tz=timezone.utc) + timedelta(seconds=next_delay)
+
+    async def log_run(self, media: Media):
+        await self.logs_repository.log(
+            "ImageGenerator",
+            LogLevel.INFO,
+            "Image generation completed",
+            media.model_dump(),
+        )
