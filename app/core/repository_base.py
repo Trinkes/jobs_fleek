@@ -9,10 +9,11 @@ from sqlalchemy import (
     Row,
 )
 
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from app.core.database import (
     Base,
     AsyncSessionDep,
-    AsyncSessionLocal,
     Basic,
 )
 from app.core.exceptions import ResourceNotFoundException
@@ -27,7 +28,7 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
         self,
         async_session: AsyncSessionDep,
     ):
-        self._async_session: AsyncSessionLocal = async_session
+        self._async_session: async_sessionmaker[AsyncSession] = async_session
         generic_types = get_args(self.__orig_bases__[0])  # type: ignore
 
         self.model = generic_types[1]
@@ -38,7 +39,9 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
             )
         self.table: Table = self.database_model.__table__
 
-    def _map_model(self, model: DatabaseModelType | None) -> PydanticModelType:
+    def _map_model(
+        self, model: DatabaseModelType | Row[tuple[DatabaseModelType]] | None
+    ) -> PydanticModelType:
         optional_model = self._map_optional_model(model)
         if optional_model is None:
             raise ResourceNotFoundException(
@@ -48,7 +51,7 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
             return optional_model
 
     def _map_optional_model(
-        self, model: DatabaseModelType | None
+        self, model: DatabaseModelType | Row[tuple[DatabaseModelType]] | None
     ) -> PydanticModelType | None:
         if isinstance(model, Row):
             model = model[0]

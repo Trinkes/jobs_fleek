@@ -15,7 +15,8 @@ from app.image_generator.dummy_image_generator.dummy_image_generator_model impor
     DummyImageGeneratorModel,
     ErrorSimulator,
 )
-from app.image_generator.image_generator import ImageGenerator, TaskScheduler
+from app.image_generator.image_generator import ImageGenerator
+from app.image_generator.task_scheduler import TaskScheduler
 from app.image_generator.image_generator_model import (
     GenerateImageServiceError,
     GenericImageGeneratorError,

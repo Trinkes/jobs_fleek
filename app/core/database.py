@@ -82,4 +82,4 @@ def get_db():
     return AsyncSessionLocal
 
 
-AsyncSessionDep = Annotated[AsyncSession, Depends(get_db)]
+AsyncSessionDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_db)]

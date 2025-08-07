@@ -1,6 +1,5 @@
 import logging
 import traceback
-from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 
 from asyncpg.pgproto.pgproto import timedelta
@@ -10,21 +9,15 @@ from app.image_generator.image_generator_model import (
     ImageGeneratorModel,
 )
 from app.image_generator.storage import Storage
+from app.image_generator.task_scheduler import TaskScheduler
 from app.logs.log_crud import LogRepositoryDep
 from app.logs.log_level import LogLevel
-from app.media.job_id import JobId
 from app.media.media import Media
 from app.media.media_id import MediaId
 from app.media.media_repository import MediaRepository, MediaRepositoryDep
 from app.media.media_status import MediaStatus
 
 logger = logging.getLogger(__name__)
-
-
-class TaskScheduler(ABC):
-    @abstractmethod
-    def schedule_media_generation(self, media_id: MediaId, eta: datetime) -> JobId:
-        raise NotImplementedError()
 
 
 class ImageGenerator:
@@ -63,6 +56,7 @@ class ImageGenerator:
         except ResourceNotFoundException as error:
             logger.warning(f"no media found with {media_id} id.", exc_info=error)
             await self.log_error(error)
+            return None
         except Exception as error:
             logger.warning("image generation failed", exc_info=error)
             # we can, if needed, differentiate the exceptions based on ImageGeneratorModel#generate_image documentation

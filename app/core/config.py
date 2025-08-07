@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AnyUrl,
@@ -26,6 +26,7 @@ def parse_cors(v: Any) -> list[str] | str:
 
 
 class Settings(BaseSettings):
+    ENVIRONMENT: Literal["local", "staging", "production"] = "local"
     PROJECT_ROOT_DIR: Path = Path(
         os.path.dirname(os.path.abspath(__file__))
     ).parent.parent
