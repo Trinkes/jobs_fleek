@@ -1,8 +1,12 @@
 from fastapi import APIRouter
 
-from app.media.api.schemas import MediaGenerationParams, MediaOut
+from app.core.exceptions import InvalidStateException
+from app.image_generator.storage import StorageDep
+from app.media.api.schemas import MediaGenerationParams, MediaOut, MediaUrlOut
 from app.media.job_id import JobId
+from app.media.media_id import MediaId
 from app.media.media_repository import MediaRepositoryDep
+from app.media.media_status import MediaStatus
 from app.tasks.celery_tasks import create_media
 
 media_router = APIRouter()
@@ -24,3 +28,16 @@ async def get_media(
     media_repository: MediaRepositoryDep,
 ):
     return await media_repository.get_from_job_id(job_id)
+
+
+@media_router.get("/content/{media_id}", response_model=MediaUrlOut)
+async def get_media_url(
+    media_id: MediaId, storage: StorageDep, media_repository: MediaRepositoryDep
+):
+    media = await media_repository.get_or_raise(media_id)
+    if media.status is not MediaStatus.COMPLETED:
+        raise InvalidStateException(
+            "media generation is not completed", extras=media.model_dump()
+        )
+    url = await storage.create_media_url(media.media_uri)
+    return MediaUrlOut(url=url)

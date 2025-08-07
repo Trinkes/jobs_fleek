@@ -10,3 +10,7 @@ class MediaGenerationParams(BasicModel):
 
 class MediaOut(Media):
     media_uri: str | None = Field(None, exclude=True)
+
+
+class MediaUrlOut(BasicModel):
+    url: str

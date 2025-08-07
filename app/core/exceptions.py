@@ -1,5 +1,6 @@
 from typing import Any
-from uuid import UUID
+
+from app.logs.json_serializable import make_json_serializable
 
 
 class CustomBaseException(Exception):
@@ -12,14 +13,10 @@ class CustomBaseException(Exception):
         super().__init__(message)
 
     def to_json(self) -> dict[str, Any]:
-        serialized_extras = {
-            key: str(value) if isinstance(value, UUID) else value
-            for key, value in (self.extras or {}).items()
-        }
         return {
             "error_code": self.error_code,
             "message": self.message,
-            "extras": serialized_extras,
+            "extras": make_json_serializable(self.extras),
         }
 
 
@@ -34,4 +31,18 @@ class ResourceNotFoundException(CustomBaseException):
             error_code = "RESOURCE_NOT_FOUND"
         if message is None:
             message = "Resource not found"
+        super().__init__(error_code, message, extras)
+
+
+class InvalidStateException(CustomBaseException):
+    def __init__(
+        self,
+        message: str | None = None,
+        error_code: str | None = None,
+        extras: dict[str, Any] | None = None,
+    ):
+        if error_code is None:
+            error_code = "INVALID_STATE"
+        if message is None:
+            message = "Invalid resource state"
         super().__init__(error_code, message, extras)

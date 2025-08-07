@@ -1,8 +1,6 @@
 import logging
 import traceback
-from datetime import datetime, timezone
-
-from asyncpg.pgproto.pgproto import timedelta
+from datetime import datetime, timezone, timedelta
 
 from app.core.exceptions import ResourceNotFoundException
 from app.image_generator.image_generator_model import (

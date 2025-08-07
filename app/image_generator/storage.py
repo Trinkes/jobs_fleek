@@ -1,9 +1,13 @@
 import io
+import time
 import uuid
-from typing import AsyncIterator
+from typing import AsyncIterator, Annotated
 
 import aioboto3
+from fastapi import Depends
 from pydantic import AnyUrl
+
+from app.core.config import settings
 
 
 class Storage:
@@ -25,3 +29,40 @@ class Storage:
             bucket = await s3.Bucket(self.bucket_name)
             await bucket.upload_fileobj(Fileobj=image_data, Key=file_key)
         return f"s3://{self.bucket_name}/{file_key}"
+
+    async def create_media_url(self, uri: str) -> AnyUrl:
+        if not uri.startswith("s3://"):
+            raise ValueError("invalid S3 uri")
+
+        bucket, key = uri[5:].split("/", 1)
+        start = time.perf_counter()
+        for i in range(0, 1):
+            async with self.aio_session.client(
+                "s3",
+                endpoint_url=self.s3_url,
+            ) as s3:
+                url = await s3.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": bucket, "Key": key},
+                    ExpiresIn=3600,
+                )
+        end = time.perf_counter()
+        print(f"time: {end-start}")
+
+        return url
+
+
+def get_storage():
+    session = aioboto3.Session(
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_DEFAULT_REGION,
+    )
+    return Storage(
+        aio_session=session,
+        bucket_name=settings.BUCKET_NAME,
+        s3_url=settings.S3_ENDPOINT_URL,
+    )
+
+
+StorageDep = Annotated[Storage, Depends(get_storage)]

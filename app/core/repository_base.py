@@ -3,6 +3,7 @@ from typing import (
     TypeVar,
     get_args,
 )
+from uuid import UUID
 
 from sqlalchemy import (
     Table,
@@ -38,6 +39,11 @@ class BaseRepository(Generic[DatabaseModelType, PydanticModelType]):
                 f"model should be a subclass of {Base.__name__}, got {self.model}"
             )
         self.table: Table = self.database_model.__table__
+
+    async def get_or_raise(self, object_id: UUID) -> PydanticModelType:
+        async with self._async_session() as session:
+            model = await session.get(self.database_model, object_id)
+            return self._map_model(model)
 
     def _map_model(
         self, model: DatabaseModelType | Row[tuple[DatabaseModelType]] | None

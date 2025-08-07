@@ -11,7 +11,7 @@ from starlette.responses import RedirectResponse, JSONResponse
 from app import api_router
 from app.core.config import settings
 from app.core.database import setup_database, get_engine
-from app.core.exceptions import ResourceNotFoundException
+from app.core.exceptions import ResourceNotFoundException, InvalidStateException
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
@@ -60,3 +60,8 @@ async def root_redirect():
 @fastapi_app.exception_handler(ResourceNotFoundException)
 def resource_not_found_exception_handler(request, exc: ResourceNotFoundException):
     return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=exc.to_json())
+
+
+@fastapi_app.exception_handler(InvalidStateException)
+def invalid_state_exception_handler(request, exc: InvalidStateException):
+    return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=exc.to_json())
