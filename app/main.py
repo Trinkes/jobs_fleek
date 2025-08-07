@@ -3,13 +3,15 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
+from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, JSONResponse
 
 from app import api_router
 from app.core.config import settings
 from app.core.database import setup_database, get_engine
+from app.core.exceptions import ResourceNotFoundException
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
@@ -53,3 +55,8 @@ async def add_process_time_header(request, call_next):
 @fastapi_app.get("/", tags=["root"], include_in_schema=False)
 async def root_redirect():
     return RedirectResponse(url="/docs")
+
+
+@fastapi_app.exception_handler(ResourceNotFoundException)
+def resource_not_found_exception_handler(request, exc: ResourceNotFoundException):
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=exc.to_json())
