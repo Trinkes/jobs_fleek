@@ -3,14 +3,14 @@ from typing import AsyncIterator
 import replicate
 from replicate.exceptions import ModelError
 
-from app.image_generator.image_generator_model import (
-    ImageGeneratorModel,
-    GenerateImageServiceError,
-    GenericImageGeneratorError,
+from app.media_generator.media_generator_model import (
+    MediaGeneratorModel,
+    GenerateMediaServiceError,
+    GenericMediaGeneratorError,
 )
 
 
-class ReplicateImageGeneratorModel(ImageGeneratorModel):
+class ReplicateMediaGeneratorModel(MediaGeneratorModel):
     # Note: This class may need adjustments as it hasn't been tested with the Replicate API.
     #
     # According to their documentation:
@@ -20,7 +20,7 @@ class ReplicateImageGeneratorModel(ImageGeneratorModel):
     # which would be better for memory optimization. However, for simplicity, this implementation
     # loads the complete image and then "streams" it.
 
-    async def generate_image(self, prompt: str) -> AsyncIterator[bytes]:
+    async def generate_media(self, prompt: str) -> AsyncIterator[bytes]:
         try:
             file_output = await replicate.async_run(
                 "black-forest-labs/flux-schnell",
@@ -30,6 +30,6 @@ class ReplicateImageGeneratorModel(ImageGeneratorModel):
             for chunk in file_output:
                 yield chunk
         except ModelError as e:
-            raise GenerateImageServiceError(str(e)) from e
+            raise GenerateMediaServiceError(str(e)) from e
         except BaseException as e:
-            raise GenericImageGeneratorError(str(e)) from e
+            raise GenericMediaGeneratorError(str(e)) from e

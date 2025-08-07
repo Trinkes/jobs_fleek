@@ -3,11 +3,9 @@ import traceback
 from datetime import datetime, timezone, timedelta
 
 from app.core.exceptions import ResourceNotFoundException
-from app.image_generator.image_generator_model import (
-    ImageGeneratorModel,
-)
-from app.image_generator.storage import Storage
-from app.image_generator.task_scheduler import TaskScheduler
+from app.media_generator.media_generator_model import MediaGeneratorModel
+from app.media_generator.storage import Storage
+from app.media_generator.task_scheduler import TaskScheduler
 from app.logs.log_crud import LogRepositoryDep
 from app.logs.log_level import LogLevel
 from app.media.media import Media
@@ -18,10 +16,10 @@ from app.media.media_status import MediaStatus
 logger = logging.getLogger(__name__)
 
 
-class ImageGenerator:
+class MediaGenerator:
     def __init__(
         self,
-        image_generator_model: ImageGeneratorModel,
+        media_generator_model: MediaGeneratorModel,
         media_repository: MediaRepositoryDep,
         logs_repository: LogRepositoryDep,
         storage: Storage,
@@ -35,19 +33,19 @@ class ImageGenerator:
         self.task_scheduler = task_scheduler
         self.storage = storage
         self.media_repository: MediaRepository = media_repository
-        self.image_generator_model = image_generator_model
+        self.media_generator_model = media_generator_model
 
-    async def generate_image(self, media_id: MediaId) -> Media | None:
+    async def generate_media(self, media_id: MediaId) -> Media | None:
         media = None
         try:
             media = await self.media_repository.get_and_update_status(
                 media_id, MediaStatus.IN_QUEUE, MediaStatus.PROCESSING
             )
-            image_bytes_iter = self.image_generator_model.generate_image(media.prompt)
-            image_uri = await self.storage.save_image(image_bytes_iter)
+            media_bytes_iter = self.media_generator_model.generate_media(media.prompt)
+            media_uri = await self.storage.save_bytes(media_bytes_iter)
 
             media = await self.media_repository.finish_media_generation(
-                media.id, image_uri, MediaStatus.COMPLETED
+                media.id, media_uri, MediaStatus.COMPLETED
             )
             await self.log_run(media)
             return media
@@ -56,9 +54,9 @@ class ImageGenerator:
             await self.log_error(error)
             return None
         except Exception as error:
-            logger.warning("image generation failed", exc_info=error)
-            # we can, if needed, differentiate the exceptions based on ImageGeneratorModel#generate_image documentation
-            # ex: if it's a GenerateImageServiceError and the service provide a time to wait, we could use it as next
+            logger.warning("media generation failed", exc_info=error)
+            # we can, if needed, differentiate the exceptions based on MediaGeneratorModel#generate_media documentation
+            # ex: if it's a GenerateMediaServiceError and the service provide a time to wait, we could use it as next
             # try datetime
 
             await self.log_error(error, media)
@@ -80,9 +78,9 @@ class ImageGenerator:
             extras = media.model_dump() | extras
 
         await self.logs_repository.log(
-            "ImageGenerator",
+            "MediaGenerator",
             LogLevel.ERROR,
-            "Image generation failed",
+            "Media generation failed",
             extras,
         )
 
@@ -104,8 +102,8 @@ class ImageGenerator:
 
     async def log_run(self, media: Media):
         await self.logs_repository.log(
-            "ImageGenerator",
+            "MediaGenerator",
             LogLevel.INFO,
-            "Image generation completed",
+            "Media generation completed",
             media.model_dump(),
         )

@@ -1,6 +1,6 @@
 # Fleek Labs
 
-A FastAPI application with Celery background tasks, using PostgreSQL, Redis, and LocalStack for AWS services simulation.
+A modern media processing API built with FastAPI and Celery for asynchronous background tasks. Features AI-powered image generation with support for multiple models, scalable task processing, and cloud storage integration.
 
 ## Challenge notes
 
@@ -19,9 +19,9 @@ might be unexpected since:
 
 The current approach works but could be more predictable for API consumers.
 
-### ImageGeneratorModel
+### MediaGeneratorModel
 
-I ended up creating an interface, ImageGeneratorModel, that represents the replicate api. I never tested the real
+I ended up creating an interface, MediaGeneratorModel, that represents the replicate api. I never tested the real
 integration but I believe that if it doesn't work out of the box, it should run fine with a few adjustments.
 
 ### media/content/{media_id} endpoint

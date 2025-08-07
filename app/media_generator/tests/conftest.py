@@ -3,13 +3,14 @@ from datetime import datetime
 
 import aioboto3
 import pytest
-from app.image_generator.dummy_image_generator.dummy_image_generator_model import (
-    DummyImageGeneratorModel,
+
+from app.media_generator.dummy_media_generator.dummy_media_generator_model import (
     ErrorSimulator,
+    DummyMediaGeneratorModel,
 )
-from app.image_generator.image_generator import ImageGenerator
-from app.image_generator.task_scheduler import TaskScheduler
-from app.image_generator.storage import Storage
+from app.media_generator.media_generator import MediaGenerator
+from app.media_generator.task_scheduler import TaskScheduler
+from app.media_generator.storage import Storage
 from app.logs.log_crud import LogsRepository
 from app.media.job_id import JobId
 from app.media.media_id import MediaId
@@ -45,23 +46,23 @@ def storage():
 
 
 @pytest.fixture(scope="session")
-def image_generator(
+def media_generator(
     media_repository: MediaRepository,
     task_scheduler,
     logs_repository: LogsRepository,
     storage: Storage,
-) -> ImageGenerator:
+) -> MediaGenerator:
     class NoErrorErrorSimulator(ErrorSimulator):
         def maybe_raise_error(self):
             pass
 
-    image_generator_model = DummyImageGeneratorModel(NoErrorErrorSimulator())
+    media_generator_model = DummyMediaGeneratorModel(NoErrorErrorSimulator())
 
-    image_generator = ImageGenerator(
-        image_generator_model,
+    media_generator = MediaGenerator(
+        media_generator_model,
         media_repository,
         storage=storage,
         task_scheduler=task_scheduler,
         logs_repository=logs_repository,
     )
-    return image_generator
+    return media_generator

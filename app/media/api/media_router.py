@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.exceptions import InvalidStateException
-from app.image_generator.storage import StorageDep
+from app.media_generator.storage import StorageDep
 from app.media.api.schemas import MediaGenerationParams, MediaOut, MediaUrlOut
 from app.media.job_id import JobId
 from app.media.media_id import MediaId

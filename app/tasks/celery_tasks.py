@@ -11,17 +11,17 @@ from sentry_sdk.integrations.celery import CeleryIntegration
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
-from app.image_generator.dummy_image_generator.dummy_image_generator_model import (
-    DummyImageGeneratorModel,
+from app.media_generator.dummy_media_generator.dummy_media_generator_model import (
     ErrorSimulator,
+    DummyMediaGeneratorModel,
 )
-from app.image_generator.image_generator import ImageGenerator
-from app.image_generator.task_scheduler import TaskScheduler
-from app.image_generator.image_generator_model import (
-    GenerateImageServiceError,
-    GenericImageGeneratorError,
+from app.media_generator.media_generator import MediaGenerator
+from app.media_generator.media_generator_model import (
+    GenericMediaGeneratorError,
+    GenerateMediaServiceError,
 )
-from app.image_generator.storage import Storage
+from app.media_generator.task_scheduler import TaskScheduler
+from app.media_generator.storage import Storage
 from app.logs.log_crud import LogsRepository
 from app.media.job_id import JobId
 from app.media.media_id import MediaId
@@ -69,11 +69,11 @@ async def _generate_media(media_id: MediaId):
         def maybe_raise_error(self):
             if random.randint(1, 100) > 70:
                 if random.randint(1, 100) > 80:
-                    raise GenerateImageServiceError("test service error")
+                    raise GenerateMediaServiceError("test service error")
                 else:
-                    raise GenericImageGeneratorError("test generic error")
+                    raise GenericMediaGeneratorError("test generic error")
 
-    image_generator_model = DummyImageGeneratorModel(ServiceErrorSimulator(), 1)
+    media_generator_model = DummyMediaGeneratorModel(ServiceErrorSimulator(), 1)
     async with get_db_session_maker() as db_session:
         media_repository = MediaRepository(db_session)
         session = aioboto3.Session(
@@ -97,14 +97,14 @@ async def _generate_media(media_id: MediaId):
                 ).id
 
         log_repository = LogsRepository(db_session)
-        image_generator = ImageGenerator(
-            image_generator_model,
+        media_generator = MediaGenerator(
+            media_generator_model,
             media_repository,
             storage=storage,
             task_scheduler=CeleryTaskScheduler(),
             logs_repository=log_repository,
         )
-        media = await image_generator.generate_image(media_id)
+        media = await media_generator.generate_media(media_id)
         if media is None:
             return None
         else:

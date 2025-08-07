@@ -32,14 +32,14 @@ class MediaRepository(BaseRepository[Medias, Media]):
             return self._map_model(media)
 
     async def finish_media_generation(
-        self, media_id: MediaId, image_uri: str, status: MediaStatus
+        self, media_id: MediaId, media_uri: str, status: MediaStatus
     ) -> Media:
         statement = (
             update(Medias)
             .where(Medias.id == media_id)
             .values(
                 **{
-                    Medias.media_uri.key: image_uri,
+                    Medias.media_uri.key: media_uri,
                     Medias.status.key: status,
                     Medias.number_of_tries.key: Medias.number_of_tries + 1,
                 }
