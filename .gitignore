@@ -147,5 +147,5 @@ crashlytics-build.properties
 fabric.properties
 
 .kamal/secrets
-./volume
+volume
 .data
