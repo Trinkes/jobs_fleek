@@ -2,20 +2,36 @@
 
 A FastAPI application with Celery background tasks, using PostgreSQL, Redis, and LocalStack for AWS services simulation.
 
-## Challenge considerations
+## Challenge notes
 
 ### /media/status/{job_id} endpoint
 
-The current design has `/media/status/{job_id}` return the complete media resource. While this works functionally, it might be unexpected since:
+The current design has `/media/status/{job_id}` return the complete media resource. While this works functionally, it
+might be unexpected since:
 
 - I would expect "status" endpoints to return lightweight status information
 - The endpoint name suggests it's about status, but it returns full resource data
 
 **Alternatives to consider:**
+
 - **Option 1:** Use `/media/{resource_id}` for complete resources, `/media/status/{job_id}` for status only
 - **Option 2:** Rename to `/media/jobs/{job_id}` to better reflect that it returns complete job results
 
 The current approach works but could be more predictable for API consumers.
+
+### ImageGeneratorModel
+
+I ended up creating an interface, ImageGeneratorModel, that represents the replicate api. I never tested the real
+integration but I believe that if it doesn't work out of the box, it should run fine with a few adjustments.
+
+### media/content/{media_id} endpoint
+
+I assumed that the S3 bucket wouldn’t be public, and that there would be a need to generate a pre-signed URL to access
+the generated media. To avoid the relatively expensive pre-signed URL generation on every request, I implemented the
+media/content/{media_id} endpoint.
+
+This approach might not be suitable depending on the API consumer’s needs. For example, it could result in worse
+performance if the client needs to list all the generated images.
 
 ## Tech Stack
 
@@ -26,6 +42,9 @@ The current approach works but could be more predictable for API consumers.
 - **LocalStack**: Local AWS services simulation
 - **Alembic**: Database migration tool
 - **Docker**: Containerization and orchestration
+
+This tech stack was chosen based on my experience with the technologies and the requirements (which actually overlap on
+most of the technologies)
 
 ## Prerequisites
 
