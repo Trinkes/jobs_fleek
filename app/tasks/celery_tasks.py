@@ -73,7 +73,7 @@ async def _generate_media(media_id: MediaId):
                 else:
                     raise GenericMediaGeneratorError("test generic error")
 
-    media_generator_model = DummyMediaGeneratorModel(ServiceErrorSimulator(), 1)
+    media_generator_model = DummyMediaGeneratorModel(ServiceErrorSimulator(), 5)
     async with get_db_session_maker() as db_session:
         media_repository = MediaRepository(db_session)
         session = aioboto3.Session(

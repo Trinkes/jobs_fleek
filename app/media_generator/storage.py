@@ -1,5 +1,4 @@
 import io
-import time
 import uuid
 from typing import AsyncIterator, Annotated
 
@@ -33,22 +32,20 @@ class Storage:
     async def create_media_url(self, uri: str) -> AnyUrl:
         if not uri.startswith("s3://"):
             raise ValueError("invalid S3 uri")
-
+        # workaround for this to work with localhost through full docker compose
+        s3_url = str(self.s3_url)
+        if s3_url.startswith("http://localstack"):
+            s3_url = s3_url.replace("http://localstack", "http://localhost")
         bucket, key = uri[5:].split("/", 1)
-        start = time.perf_counter()
-        for i in range(0, 1):
-            async with self.aio_session.client(
-                "s3",
-                endpoint_url=self.s3_url,
-            ) as s3:
-                url = await s3.generate_presigned_url(
-                    "get_object",
-                    Params={"Bucket": bucket, "Key": key},
-                    ExpiresIn=3600,
-                )
-        end = time.perf_counter()
-        print(f"time: {end-start}")
-
+        async with self.aio_session.client(
+            "s3",
+            endpoint_url=s3_url,
+        ) as s3:
+            url = await s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": bucket, "Key": key},
+                ExpiresIn=3600,
+            )
         return url
 
 

@@ -7,11 +7,10 @@ services:
       - fleek-db-data:/var/lib/postgresql/data/pgdata
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_USER=${POSTGRES_USER:-user}
+      - POSTGRES_DB=${POSTGRES_DB:-fleek_db}
     env_file:
-      - .env.example
       - .env
     ports:
       - '5469:5432'
@@ -55,6 +54,8 @@ services:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./scripts/localstack:/etc/localstack/init/ready.d"
+    env_file:
+      - .env
 volumes:
   fleek-db-data:
   fleek-redis-data:
