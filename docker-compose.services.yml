@@ -2,14 +2,14 @@ services:
   postgres:
     image: postgres:17.5
     restart: always
-    container_name: fleek-postgres
+    container_name: media-postgres
     volumes:
-      - fleek-db-data:/var/lib/postgresql/data/pgdata
+      - media-db-data:/var/lib/postgresql/data/pgdata
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
       - POSTGRES_USER=${POSTGRES_USER:-user}
-      - POSTGRES_DB=${POSTGRES_DB:-fleek_db}
+      - POSTGRES_DB=${POSTGRES_DB:-media_db}
     env_file:
       - .env
     ports:
@@ -35,7 +35,7 @@ services:
   redis:
     image: redis:7.0
     restart: always
-    container_name: fleek-redis
+    container_name: media-redis
     ports:
       - '6834:6379'
     healthcheck:
@@ -57,5 +57,5 @@ services:
     env_file:
       - .env
 volumes:
-  fleek-db-data:
-  fleek-redis-data:
+  media-db-data:
+  media-redis-data:

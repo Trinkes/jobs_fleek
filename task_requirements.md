@@ -62,7 +62,7 @@ Async ORM (e.g., Tortoise ORM or SQLModel)
 
 Submission Guidelines
 
-GitHub Repository: Set up an open GitHub repository for your assignment and share it with atika@fleek.xyz
+GitHub Repository: Set up an open GitHub repository for your assignment
 
 README.md: Include clear setup instructions, architecture overview, and tech choices.
 

@@ -1,7 +1,20 @@
-# Fleek Labs Media Processing API
+# Media Processing API
 
 A scalable, asynchronous media processing API that leverages AI models for image generation. Built with FastAPI for
 high-performance REST APIs and Celery for distributed task processing, with cloud storage integration via S3.
+
+## About This Project
+
+This project started as a technical challenge for a job application, but I've continued developing it as a demonstration of scalable API design and asynchronous processing patterns. I'm sharing it here to get feedback from the community on the architecture, code quality, and implementation decisions.
+
+**What I'm looking for feedback on:**
+- Overall architecture and design patterns
+- Code organization and best practices
+- Performance considerations and potential bottlenecks
+- API design decisions (especially around the media status endpoints)
+- Areas for improvement or alternative approaches
+
+The project showcases modern Python web development with FastAPI, Celery, and containerized deployment. While it uses a dummy AI model for demonstration, the architecture is designed to easily integrate with real AI services like Replicate.
 
 ## Architecture Overview
 

@@ -4,8 +4,8 @@ services:
   backend:
     build:
       context: .
-    image: fleek:0.1
-    container_name: fleek-backend
+    image: media-processing:0.1
+    container_name: media-backend
     ports:
       - "8000:80"
     volumes:

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-awslocal s3 mb s3://fleek-labs
+awslocal s3 mb s3://media-processing

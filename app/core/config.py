@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         list[AnyUrl] | str, BeforeValidator(parse_cors)
     ] = Field(default_factory=list)
 
-    PROJECT_NAME: str = "Fleek Labs"
+    PROJECT_NAME: str = "Media Processing API"
     SENTRY_DSN: HttpUrl | None = None
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
@@ -73,7 +73,7 @@ class Settings(BaseSettings):
         )
 
     REDIS_URL: RedisDsn
-    BUCKET_NAME: str = "fleek-labs"
+    BUCKET_NAME: str = "media-processing"
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
     AWS_DEFAULT_REGION: str
